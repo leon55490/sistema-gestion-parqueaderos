@@ -23,3 +23,8 @@ Los diagramas del proyecto se encuentran en la carpeta `docs/`.
 ### Diagrama de clases
 
 ![Diagrama de clase](docs/DiagramasDeClase.png)
+
+
+### Diagrama BPMN
+
+![Diagrama BPMN](docs/DiagramaBPMN.png)
