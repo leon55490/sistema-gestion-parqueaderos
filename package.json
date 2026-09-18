@@ -1,0 +1,24 @@
+{
+  "name": "sistema-gestion-parqueaderos",
+  "version": "1.0.0",
+  "description": "El sistema permite gestionar y reservar espacios de parqueaderos de manera organizada.\r Los usuarios pueden registrar sus vehículos y consultar los espacios disponibles.\r También pueden realizar, consultar y cancelar reservas para un espacio determinado.\r Los administradores pueden gestionar espacios, tarifas, reservas y registrar las entradas y salidas de los vehículos.\r El sistema busca evitar conflictos de reservas y calcular correctamente el costo del servicio según las tarifas establecidas.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leon55490/sistema-gestion-parqueaderos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/leon55490/sistema-gestion-parqueaderos/issues"
+  },
+  "homepage": "https://github.com/leon55490/sistema-gestion-parqueaderos#readme"
+}
