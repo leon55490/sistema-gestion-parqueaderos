@@ -1,7 +1,6 @@
-// services/espacio.service.js — Lógica de negocio y "base de datos" en memoria
-// Se pierde al reiniciar el proceso: eso es "en memoria"
+// src/services/espacio.service.js
+// Capa de negocio: reglas del dominio. NO conoce req, res ni códigos HTTP.
 
-// --- Datos iniciales (simulan lo que vendría de PostgreSQL) ---
 let espacios = [
   { id: 1, numero: 'A-01', tipo: 'carro',     estado: 'libre',    ubicacion: 'Piso 1 - Norte' },
   { id: 2, numero: 'A-02', tipo: 'carro',     estado: 'ocupado',  ubicacion: 'Piso 1 - Norte' },
@@ -12,16 +11,9 @@ let espacios = [
 ];
 let siguienteId = 7;
 
-// --- Constantes de validación ---
 const TIPOS_VALIDOS   = ['carro', 'moto', 'bicicleta'];
 const ESTADOS_VALIDOS = ['libre', 'ocupado', 'reservado', 'mantenimiento'];
 
-// --- Operaciones CRUD + validaciones de negocio ---
-
-/**
- * Obtener todos los espacios, con filtro opcional por estado y/o tipo.
- * Ejemplo: obtenerTodos({ estado: 'libre', tipo: 'moto' })
- */
 export function obtenerTodos(filtros = {}) {
   let resultado = [...espacios];
 
@@ -35,121 +27,75 @@ export function obtenerTodos(filtros = {}) {
   return resultado;
 }
 
-/** Obtener un espacio por su id. Retorna null si no existe. */
 export function obtenerPorId(id) {
-  return espacios.find((e) => e.id === id) || null;
+  return espacios.find((e) => e.id === id) ?? null;
 }
 
-/**
- * Crear un nuevo espacio.
- * Validaciones de negocio:
- *  - numero, tipo y ubicacion son obligatorios
- *  - tipo debe ser uno de los válidos (carro, moto, bicicleta)
- *  - numero no se puede repetir (cada espacio es único en el parqueadero)
- *  - estado, si se envía, debe ser válido
- */
 export function crear(datos) {
-  const errores = [];
-
-  if (!datos.numero || datos.numero.trim() === '') {
-    errores.push('El campo "numero" es obligatorio');
+  if (!datos.numero || datos.numero.trim() === '' || !datos.tipo || !datos.ubicacion || datos.ubicacion.trim() === '') {
+    throw new Error('DATOS_INVALIDOS');
   }
-  if (!datos.tipo) {
-    errores.push('El campo "tipo" es obligatorio');
-  } else if (!TIPOS_VALIDOS.includes(datos.tipo)) {
-    errores.push(`"tipo" debe ser uno de: ${TIPOS_VALIDOS.join(', ')}`);
-  }
-  if (!datos.ubicacion || datos.ubicacion.trim() === '') {
-    errores.push('El campo "ubicacion" es obligatorio');
+  if (!TIPOS_VALIDOS.includes(datos.tipo)) {
+    throw new Error('TIPO_INVALIDO');
   }
   if (datos.estado && !ESTADOS_VALIDOS.includes(datos.estado)) {
-    errores.push(`"estado" debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}`);
+    throw new Error('ESTADO_INVALIDO');
   }
-
-  // Validación de negocio: no se puede repetir el número de espacio
-  if (datos.numero && espacios.some((e) => e.numero === datos.numero.trim())) {
-    return { error: `Ya existe un espacio con el número "${datos.numero}"`, codigo: 409 };
-  }
-
-  if (errores.length > 0) {
-    return { error: errores.join('; '), codigo: 400 };
+  if (espacios.some((e) => e.numero === datos.numero.trim())) {
+    throw new Error('NUMERO_DUPLICADO');
   }
 
   const nuevo = {
     id: siguienteId++,
     numero: datos.numero.trim(),
     tipo: datos.tipo,
-    estado: datos.estado || 'libre', // por defecto un espacio nuevo está libre
+    estado: datos.estado || 'libre',
     ubicacion: datos.ubicacion.trim(),
   };
 
   espacios.push(nuevo);
-  return { datos: nuevo, codigo: 201 };
+  return nuevo;
 }
 
-/**
- * Actualizar un espacio existente.
- * Validaciones de negocio:
- *  - Si se cambia el tipo, debe ser válido
- *  - Si se cambia el estado, debe ser válido
- *  - Si se cambia el número, no puede ser uno que ya exista en otro espacio
- *  - No se puede cambiar el tipo de un espacio que está ocupado
- */
 export function actualizar(id, datos) {
-  const espacio = espacios.find((e) => e.id === id);
-  if (!espacio) return { error: 'Espacio no encontrado', codigo: 404 };
-
-  const errores = [];
+  const espacio = obtenerPorId(id);
+  if (!espacio) return null;
 
   if (datos.tipo !== undefined) {
-    if (!TIPOS_VALIDOS.includes(datos.tipo)) {
-      errores.push(`"tipo" debe ser uno de: ${TIPOS_VALIDOS.join(', ')}`);
-    } else if (espacio.estado === 'ocupado') {
-      errores.push('No se puede cambiar el tipo de un espacio que está ocupado');
-    }
+    if (!TIPOS_VALIDOS.includes(datos.tipo)) throw new Error('TIPO_INVALIDO');
+    if (espacio.estado === 'ocupado') throw new Error('TIPO_NO_MODIFICABLE_SI_OCUPADO');
   }
 
   if (datos.estado !== undefined && !ESTADOS_VALIDOS.includes(datos.estado)) {
-    errores.push(`"estado" debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}`);
+    throw new Error('ESTADO_INVALIDO');
   }
 
   if (datos.numero !== undefined) {
-    if (datos.numero.trim() === '') {
-      errores.push('El campo "numero" no puede estar vacío');
-    } else if (espacios.some((e) => e.numero === datos.numero.trim() && e.id !== id)) {
-      return { error: `Ya existe un espacio con el número "${datos.numero}"`, codigo: 409 };
+    if (datos.numero.trim() === '') throw new Error('DATOS_INVALIDOS');
+    if (espacios.some((e) => e.numero === datos.numero.trim() && e.id !== id)) {
+      throw new Error('NUMERO_DUPLICADO');
     }
   }
 
-  if (errores.length > 0) {
-    return { error: errores.join('; '), codigo: 400 };
-  }
-
-  // Actualizamos solo los campos enviados
   if (datos.numero !== undefined)   espacio.numero   = datos.numero.trim();
   if (datos.tipo !== undefined)     espacio.tipo     = datos.tipo;
   if (datos.estado !== undefined)   espacio.estado   = datos.estado;
   if (datos.ubicacion !== undefined) espacio.ubicacion = datos.ubicacion.trim();
 
-  return { datos: espacio, codigo: 200 };
+  return espacio;
 }
 
-/**
- * Eliminar un espacio.
- * Validación de negocio: no se puede eliminar un espacio que está ocupado
- * (hay un vehículo adentro) ni uno que está reservado (alguien lo espera).
- */
 export function eliminar(id) {
-  const espacio = espacios.find((e) => e.id === id);
-  if (!espacio) return { error: 'Espacio no encontrado', codigo: 404 };
+  const espacio = obtenerPorId(id);
+  if (!espacio) return false;
 
   if (espacio.estado === 'ocupado') {
-    return { error: 'No se puede eliminar un espacio que está ocupado', codigo: 409 };
+    throw new Error('ELIMINAR_OCUPADO');
   }
   if (espacio.estado === 'reservado') {
-    return { error: 'No se puede eliminar un espacio que tiene una reserva activa', codigo: 409 };
+    throw new Error('ELIMINAR_RESERVADO');
   }
 
   espacios = espacios.filter((e) => e.id !== id);
-  return { codigo: 204 };
+  return true;
 }

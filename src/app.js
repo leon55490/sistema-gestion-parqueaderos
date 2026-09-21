@@ -1,45 +1,27 @@
-// app.js — Enrutador principal de la aplicación
-// Recibe TODAS las peticiones y las despacha al módulo de rutas correcto.
-// Con Express esto será app.use('/api/espacios', espacioRouter).
+// src/app.js
+// Configura Express y los middlewares (sin arrancar el servidor)
 
-import http from 'node:http';
-import { responderJson } from './helpers/http.helpers.js';
-import { manejarRuta as manejarEspacios } from './routes/espacio.routes.js';
+import express from 'express';
+import morgan from 'morgan';
+import espaciosRouter from './routes/espacio.routes.js';
+import { middlewareMantenimiento } from './middlewares/mantenimiento.js';
 
-const app = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const partes = url.pathname.split('/').filter(Boolean);
-  // Ejemplo: '/api/espacios/2' → ['api', 'espacios', '2']
+const app = express();
 
-  // Log de cada petición (lo que Morgan haría en Express)
-  console.log(`${new Date().toLocaleTimeString()} → ${req.method} ${url.pathname}`);
+// Middlewares globales
+app.use(morgan('dev')); // Logger
+app.use(express.json()); // Parseo automático del body a JSON
 
-  try {
-    // --- Ruta raíz: verificar que la API está viva ---
-    if (url.pathname === '/' && req.method === 'GET') {
-      return responderJson(res, 200, {
-        mensaje: 'Sistema de Gestión de Parqueaderos - API activa',
-        version: '1.0.0',
-        endpoints: {
-          espacios: '/api/espacios',
-        },
-      });
-    }
+// Reto 1: Middleware de mantenimiento (va antes de las rutas para bloquearlas si aplica)
+app.use(middlewareMantenimiento);
 
-    // --- Despachar a /api/espacios ---
-    if (partes[0] === 'api' && partes[1] === 'espacios') {
-      return await manejarEspacios(req, res, url, partes);
-    }
+// Rutas
+app.get('/', (req, res) => res.json({ nombre: 'Sistema de Gestión de Parqueaderos API', version: '2.0 (Express)' }));
+app.use('/api/espacios', espaciosRouter);
 
-    // --- Cualquier otra ruta: 404 ---
-    return responderJson(res, 404, { error: 'Ruta no encontrada' });
-
-  } catch (error) {
-    // JSON malformado u otro error inesperado
-    console.error('Error interno:', error.message);
-    const codigo = error.message === 'JSON inválido' ? 400 : 500;
-    return responderJson(res, codigo, { error: error.message });
-  }
+// 404 por defecto
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
 export default app;

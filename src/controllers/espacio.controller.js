@@ -1,52 +1,75 @@
-// controllers/espacio.controller.js — Maneja las peticiones HTTP de espacios
-// Recibe req/res, delega la lógica al service y responde con JSON.
-// En la semana 4 esto será un router de Express; por ahora todo es manual.
+// src/controllers/espacio.controller.js
+// Capa de presentación: traduce HTTP ↔ negocio.
 
-import { responderJson, leerBody } from '../helpers/http.helpers.js';
-import * as espacioService from '../services/espacio.service.js';
+import * as servicio from '../services/espacio.service.js';
 
-/** GET /api/espacios — listar todos (con filtros opcionales por query params) */
-export async function listar(req, res, url) {
-  const filtros = {};
-  const estado = url.searchParams.get('estado');
-  const tipo   = url.searchParams.get('tipo');
-  if (estado) filtros.estado = estado;
-  if (tipo)   filtros.tipo   = tipo;
-
-  const espacios = espacioService.obtenerTodos(filtros);
-  return responderJson(res, 200, espacios);
+export function listar(req, res) {
+  // Los query params ya están disponibles en req.query gracias a Express
+  const espacios = servicio.obtenerTodos({
+    estado: req.query.estado,
+    tipo: req.query.tipo
+  });
+  res.json(espacios);
 }
 
-/** GET /api/espacios/:id — ver un espacio */
-export async function verUno(req, res, url, id) {
-  const espacio = espacioService.obtenerPorId(id);
-  if (!espacio) return responderJson(res, 404, { error: 'Espacio no encontrado' });
-  return responderJson(res, 200, espacio);
+export function obtener(req, res) {
+  // Los parámetros de ruta están en req.params (siempre son strings)
+  const id = Number(req.params.id);
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'ID debe ser un número entero positivo' });
+  }
+
+  const espacio = servicio.obtenerPorId(id);
+  if (!espacio) return res.status(404).json({ error: 'Espacio no encontrado' });
+  
+  res.json(espacio);
 }
 
-/** POST /api/espacios — crear un espacio nuevo */
-export async function crear(req, res) {
-  const body = await leerBody(req);
-  if (!body) return responderJson(res, 400, { error: 'Body JSON requerido' });
-
-  const resultado = espacioService.crear(body);
-  if (resultado.error) return responderJson(res, resultado.codigo, { error: resultado.error });
-  return responderJson(res, resultado.codigo, resultado.datos);
+export function crear(req, res) {
+  try {
+    const nuevo = servicio.crear(req.body);
+    res.status(201).json(nuevo);
+  } catch (error) {
+    if (error.message === 'DATOS_INVALIDOS') return res.status(400).json({ error: 'Faltan campos obligatorios o están vacíos' });
+    if (error.message === 'TIPO_INVALIDO') return res.status(400).json({ error: 'El tipo especificado no es válido' });
+    if (error.message === 'ESTADO_INVALIDO') return res.status(400).json({ error: 'El estado especificado no es válido' });
+    if (error.message === 'NUMERO_DUPLICADO') return res.status(409).json({ error: 'El número de espacio ya existe' });
+    
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 }
 
-/** PUT /api/espacios/:id — actualizar un espacio */
-export async function actualizar(req, res, url, id) {
-  const body = await leerBody(req);
-  if (!body) return responderJson(res, 400, { error: 'Body JSON requerido' });
+export function actualizar(req, res) {
+  const id = Number(req.params.id);
+  if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'ID inválido' });
 
-  const resultado = espacioService.actualizar(id, body);
-  if (resultado.error) return responderJson(res, resultado.codigo, { error: resultado.error });
-  return responderJson(res, resultado.codigo, resultado.datos);
+  try {
+    const espacio = servicio.actualizar(id, req.body);
+    if (!espacio) return res.status(404).json({ error: 'Espacio no encontrado' });
+    res.json(espacio);
+  } catch (error) {
+    if (error.message === 'DATOS_INVALIDOS') return res.status(400).json({ error: 'Datos inválidos' });
+    if (error.message === 'TIPO_INVALIDO') return res.status(400).json({ error: 'Tipo inválido' });
+    if (error.message === 'ESTADO_INVALIDO') return res.status(400).json({ error: 'Estado inválido' });
+    if (error.message === 'TIPO_NO_MODIFICABLE_SI_OCUPADO') return res.status(400).json({ error: 'No se puede cambiar el tipo de un espacio ocupado' });
+    if (error.message === 'NUMERO_DUPLICADO') return res.status(409).json({ error: 'El número de espacio ya existe en otro registro' });
+
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 }
 
-/** DELETE /api/espacios/:id — eliminar un espacio */
-export async function eliminar(req, res, url, id) {
-  const resultado = espacioService.eliminar(id);
-  if (resultado.error) return responderJson(res, resultado.codigo, { error: resultado.error });
-  return responderJson(res, resultado.codigo, null);
+export function eliminar(req, res) {
+  const id = Number(req.params.id);
+  if (isNaN(id) || id <= 0) return res.status(400).json({ error: 'ID inválido' });
+
+  try {
+    const eliminado = servicio.eliminar(id);
+    if (!eliminado) return res.status(404).json({ error: 'Espacio no encontrado' });
+    res.status(204).end();
+  } catch (error) {
+    if (error.message === 'ELIMINAR_OCUPADO') return res.status(409).json({ error: 'No se puede eliminar un espacio ocupado' });
+    if (error.message === 'ELIMINAR_RESERVADO') return res.status(409).json({ error: 'No se puede eliminar un espacio reservado' });
+    
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 }

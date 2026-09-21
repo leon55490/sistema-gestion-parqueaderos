@@ -9,7 +9,7 @@ const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
   console.log('╔═══════════════════════════════════════════════════╗');
   console.log('║  Sistema de Gestión de Parqueaderos               ║');
-  console.log('║  API CRUD con HTTP nativo (sin framework)         ║');
+  console.log('║  API CRUD migrada a Express (Semana 4)            ║');
   console.log(`║  Servidor escuchando en http://localhost:${PUERTO}      ║`);
   console.log('╚═══════════════════════════════════════════════════╝');
   console.log('');
