@@ -4,6 +4,8 @@
 import express from 'express';
 import morgan from 'morgan';
 import espaciosRouter from './routes/espacio.routes.js';
+import authRouter from './routes/auth.routes.js';
+import usuariosRouter from './routes/usuario.routes.js';
 import { middlewareMantenimiento } from './middlewares/mantenimiento.js';
 
 const app = express();
@@ -17,6 +19,8 @@ app.use(middlewareMantenimiento);
 
 // Rutas
 app.get('/', (req, res) => res.json({ nombre: 'Sistema de Gestión de Parqueaderos API', version: '2.0 (Express)' }));
+app.use('/api/auth', authRouter);
+app.use('/api/usuarios', usuariosRouter);
 app.use('/api/espacios', espaciosRouter);
 
 // 404 por defecto

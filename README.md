@@ -22,9 +22,38 @@ El proyecto cuenta con una API REST desarrollada en Node.js utilizando **Express
 ### Middlewares Implementados
 - **Morgan**: Registro de peticiones HTTP en consola.
 - **Modo Mantenimiento**: Middleware global (`src/middlewares/mantenimiento.js`) que bloquea la API con un código `503` si la variable de entorno `MANTENIMIENTO=true` está configurada.
-- **API Key**: Middleware de protección (`src/middlewares/apiKey.js`) aplicado específicamente a rutas sensibles (ej: `DELETE /api/espacios`), exigiendo el header `x-api-key`.
+- **API Key**: Middleware de protección (`src/middlewares/apiKey.js`) aplicado a rutas específicas, exigiendo el header `x-api-key`.
+- **Autenticación y Roles**: Middlewares (`src/middlewares/auth.js`):
+  - `autenticarUsuario`: Valida el token de sesión en el header `Authorization: Bearer <token>`.
+  - `requiereRol(...roles)`: Autoriza el acceso únicamente a los roles indicados (ej: `administrador`, `cliente`).
 
-### Endpoints (CRUD de Espacios)
+### Usuarios de Prueba (En Memoria)
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| `administrador` | `admin@parqueadero.com` | `admin123` |
+| `cliente` | `carlos@cliente.com` | `cliente123` |
+| `cliente` | `maria@cliente.com` | `cliente123` |
+
+### Endpoints
+
+#### Autenticación (`/api/auth`)
+
+| Método | Endpoint | Descripción | Acceso |
+|---|---|---|---|
+| `POST` | `/api/auth/registro` | Registrar un nuevo usuario (rol por defecto: `cliente`) | Público |
+| `POST` | `/api/auth/login` | Iniciar sesión (retorna token Bearer y datos del usuario) | Público |
+| `GET` | `/api/auth/perfil` | Consultar perfil del usuario autenticado | Requiere Token |
+| `POST` | `/api/auth/logout` | Cerrar sesión e invalidar token | Requiere Token |
+
+#### Usuarios (`/api/usuarios`)
+
+| Método | Endpoint | Descripción | Acceso |
+|---|---|---|---|
+| `GET` | `/api/usuarios` | Listar todos los usuarios | Solo `administrador` |
+| `GET` | `/api/usuarios/:id` | Ver usuario por ID | `administrador` o el mismo usuario |
+
+#### Espacios (`/api/espacios`)
 
 | Método | Endpoint | Descripción |
 |---|---|---|
