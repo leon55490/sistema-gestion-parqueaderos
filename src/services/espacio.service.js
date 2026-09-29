@@ -1,6 +1,8 @@
 // src/services/espacio.service.js
 // Capa de negocio: reglas del dominio. NO conoce req, res ni códigos HTTP.
 
+import { conflicto, datosInvalidos, noEncontrado } from '../errores.js';
+
 let espacios = [
   { id: 1, numero: 'A-01', tipo: 'carro',     estado: 'libre',    ubicacion: 'Piso 1 - Norte' },
   { id: 2, numero: 'A-02', tipo: 'carro',     estado: 'ocupado',  ubicacion: 'Piso 1 - Norte' },
@@ -33,16 +35,16 @@ export function obtenerPorId(id) {
 
 export function crear(datos) {
   if (!datos.numero || datos.numero.trim() === '' || !datos.tipo || !datos.ubicacion || datos.ubicacion.trim() === '') {
-    throw new Error('DATOS_INVALIDOS');
+    throw datosInvalidos('Faltan campos obligatorios o están vacíos');
   }
   if (!TIPOS_VALIDOS.includes(datos.tipo)) {
-    throw new Error('TIPO_INVALIDO');
+    throw datosInvalidos('El tipo especificado no es válido');
   }
   if (datos.estado && !ESTADOS_VALIDOS.includes(datos.estado)) {
-    throw new Error('ESTADO_INVALIDO');
+    throw datosInvalidos('El estado especificado no es válido');
   }
   if (espacios.some((e) => e.numero === datos.numero.trim())) {
-    throw new Error('NUMERO_DUPLICADO');
+    throw conflicto('El número de espacio ya existe');
   }
 
   const nuevo = {
@@ -62,18 +64,18 @@ export function actualizar(id, datos) {
   if (!espacio) return null;
 
   if (datos.tipo !== undefined) {
-    if (!TIPOS_VALIDOS.includes(datos.tipo)) throw new Error('TIPO_INVALIDO');
-    if (espacio.estado === 'ocupado') throw new Error('TIPO_NO_MODIFICABLE_SI_OCUPADO');
+    if (!TIPOS_VALIDOS.includes(datos.tipo)) throw datosInvalidos('Tipo inválido');
+    if (espacio.estado === 'ocupado') throw conflicto('No se puede cambiar el tipo de un espacio ocupado');
   }
 
   if (datos.estado !== undefined && !ESTADOS_VALIDOS.includes(datos.estado)) {
-    throw new Error('ESTADO_INVALIDO');
+    throw datosInvalidos('Estado inválido');
   }
 
   if (datos.numero !== undefined) {
-    if (datos.numero.trim() === '') throw new Error('DATOS_INVALIDOS');
+    if (datos.numero.trim() === '') throw datosInvalidos('Datos inválidos');
     if (espacios.some((e) => e.numero === datos.numero.trim() && e.id !== id)) {
-      throw new Error('NUMERO_DUPLICADO');
+      throw conflicto('El número de espacio ya existe en otro registro');
     }
   }
 
@@ -90,10 +92,10 @@ export function eliminar(id) {
   if (!espacio) return false;
 
   if (espacio.estado === 'ocupado') {
-    throw new Error('ELIMINAR_OCUPADO');
+    throw conflicto('No se puede eliminar un espacio ocupado');
   }
   if (espacio.estado === 'reservado') {
-    throw new Error('ELIMINAR_RESERVADO');
+    throw conflicto('No se puede eliminar un espacio reservado');
   }
 
   espacios = espacios.filter((e) => e.id !== id);

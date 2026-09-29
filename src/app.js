@@ -7,6 +7,7 @@ import espaciosRouter from './routes/espacio.routes.js';
 import authRouter from './routes/auth.routes.js';
 import usuariosRouter from './routes/usuario.routes.js';
 import { middlewareMantenimiento } from './middlewares/mantenimiento.js';
+import { manejadorErrores } from './middlewares/errores.js';
 
 const app = express();
 
@@ -27,5 +28,8 @@ app.use('/api/espacios', espaciosRouter);
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
+
+// Middleware central de errores (siempre va de último)
+app.use(manejadorErrores);
 
 export default app;

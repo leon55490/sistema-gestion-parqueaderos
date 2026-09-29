@@ -21,6 +21,8 @@ El proyecto cuenta con una API REST desarrollada en Node.js utilizando **Express
 
 ### Middlewares Implementados
 - **Morgan**: Registro de peticiones HTTP en consola.
+- **express-validator**: Middleware central en `src/middlewares/validar.js` para recolectar errores. Las reglas de validación se configuran por ruta, protegiendo a la API de datos inválidos (corta la petición con 400 Bad Request y un reporte detallado).
+- **Manejo de Errores Centralizado**: Middleware (`src/middlewares/errores.js`) que procesa excepciones capturadas globalmente. En conjunto con la clase `ErrorHttp` (`src/errores.js`), permite lanzar errores descriptivos desde los `Services` (ej: 404, 409) limpiando los `Controllers` de condicionales HTTP.
 - **Modo Mantenimiento**: Middleware global (`src/middlewares/mantenimiento.js`) que bloquea la API con un código `503` si la variable de entorno `MANTENIMIENTO=true` está configurada.
 - **API Key**: Middleware de protección (`src/middlewares/apiKey.js`) aplicado a rutas específicas, exigiendo el header `x-api-key`.
 - **Autenticación y Roles**: Middlewares (`src/middlewares/auth.js`):
@@ -77,6 +79,9 @@ El proyecto cuenta con una API REST desarrollada en Node.js utilizando **Express
    npm run dev
    ```
 3. La API estará disponible en: `http://localhost:3000`
+
+> [!NOTE]
+> Se proveerá una colección de Postman oficial del proyecto ubicada en `docs/postman/` (Avance 1) con peticiones pre-configuradas para probar los diferentes casos de éxito y de error de la API.
 
 ---
 

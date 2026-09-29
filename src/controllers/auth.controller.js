@@ -3,7 +3,7 @@
 
 import * as usuarioService from '../services/usuario.service.js';
 
-export function registro(req, res) {
+export function registro(req, res, next) {
   try {
     const resultado = usuarioService.registrar(req.body);
     res.status(201).json({
@@ -12,27 +12,11 @@ export function registro(req, res) {
       token: resultado.token
     });
   } catch (error) {
-    if (error.message === 'DATOS_INVALIDOS') {
-      return res.status(400).json({ error: 'Nombre, correo y password son obligatorios' });
-    }
-    if (error.message === 'CORREO_INVALIDO') {
-      return res.status(400).json({ error: 'El formato del correo electrónico no es válido' });
-    }
-    if (error.message === 'PASSWORD_CORTO') {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-    }
-    if (error.message === 'ROL_INVALIDO') {
-      return res.status(400).json({ error: 'El rol debe ser cliente o administrador' });
-    }
-    if (error.message === 'CORREO_DUPLICADO') {
-      return res.status(409).json({ error: 'Ya existe un usuario registrado con este correo' });
-    }
-
-    res.status(500).json({ error: 'Error interno del servidor' });
+    next(error);
   }
 }
 
-export function login(req, res) {
+export function login(req, res, next) {
   try {
     const resultado = usuarioService.login(req.body);
     res.json({
@@ -41,27 +25,28 @@ export function login(req, res) {
       token: resultado.token
     });
   } catch (error) {
-    if (error.message === 'DATOS_INVALIDOS') {
-      return res.status(400).json({ error: 'Debe ingresar correo y contraseña' });
-    }
-    if (error.message === 'CREDENCIALES_INVALIDAS') {
-      return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
-    }
-
-    res.status(500).json({ error: 'Error interno del servidor' });
+    next(error);
   }
 }
 
-export function perfil(req, res) {
-  // req.usuario viene inyectado por el middleware autenticarUsuario
-  res.json({
-    usuario: req.usuario
-  });
+export function perfil(req, res, next) {
+  try {
+    // req.usuario viene inyectado por el middleware autenticarUsuario
+    res.json({
+      usuario: req.usuario
+    });
+  } catch(error) {
+    next(error);
+  }
 }
 
-export function logout(req, res) {
-  if (req.token) {
-    usuarioService.logout(req.token);
+export function logout(req, res, next) {
+  try {
+    if (req.token) {
+      usuarioService.logout(req.token);
+    }
+    res.json({ mensaje: 'Sesión cerrada correctamente' });
+  } catch(error) {
+    next(error);
   }
-  res.json({ mensaje: 'Sesión cerrada correctamente' });
 }

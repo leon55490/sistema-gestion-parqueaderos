@@ -3,6 +3,7 @@
 // Por ahora almacena los usuarios y tokens en memoria (hardcoded).
 
 import crypto from 'node:crypto';
+import { conflicto, datosInvalidos, noAutorizado } from '../errores.js';
 
 // Usuarios precargados para pruebas
 let usuarios = [
@@ -50,26 +51,26 @@ export function registrar(datos) {
   if (!datos.nombre || datos.nombre.trim() === '' ||
       !datos.correo || datos.correo.trim() === '' ||
       !datos.password || datos.password.trim() === '') {
-    throw new Error('DATOS_INVALIDOS');
+    throw datosInvalidos('Nombre, correo y password son obligatorios');
   }
 
   const correoLimpio = datos.correo.trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(correoLimpio)) {
-    throw new Error('CORREO_INVALIDO');
+    throw datosInvalidos('El formato del correo electrónico no es válido');
   }
 
   if (datos.password.length < 6) {
-    throw new Error('PASSWORD_CORTO');
+    throw datosInvalidos('La contraseña debe tener al menos 6 caracteres');
   }
 
   const rol = datos.rol ? datos.rol.trim().toLowerCase() : 'cliente';
   if (!ROLES_VALIDOS.includes(rol)) {
-    throw new Error('ROL_INVALIDO');
+    throw datosInvalidos('El rol debe ser cliente o administrador');
   }
 
   if (usuarios.some((u) => u.correo.toLowerCase() === correoLimpio)) {
-    throw new Error('CORREO_DUPLICADO');
+    throw conflicto('Ya existe un usuario registrado con este correo');
   }
 
   const nuevoUsuario = {
@@ -95,14 +96,14 @@ export function registrar(datos) {
 
 export function login({ correo, password }) {
   if (!correo || correo.trim() === '' || !password || password.trim() === '') {
-    throw new Error('DATOS_INVALIDOS');
+    throw datosInvalidos('Debe ingresar correo y contraseña');
   }
 
   const correoLimpio = correo.trim().toLowerCase();
   const usuario = usuarios.find((u) => u.correo.toLowerCase() === correoLimpio);
 
   if (!usuario || usuario.password !== password) {
-    throw new Error('CREDENCIALES_INVALIDAS');
+    throw noAutorizado('Correo o contraseña incorrectos');
   }
 
   const token = crypto.randomUUID();
