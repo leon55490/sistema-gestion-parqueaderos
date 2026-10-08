@@ -105,6 +105,83 @@ Los diagramas de diseño del proyecto se encuentran en la carpeta `docs/`.
 
 ![Diagrama de clase](docs/DiagramasDeClase.png)
 
+### Modelo Entidad-Relación
+
+```mermaid
+erDiagram
+    USUARIO ||--o{ VEHICULO : "posee (1:N)"
+    USUARIO ||--o{ RESERVA : "solicita (1:N)"
+    VEHICULO ||--o{ RESERVA : "asociado a (1:N)"
+    RESERVA ||--o{ RESERVA_ESPACIO : "asigna (1:N)"
+    ESPACIO ||--o{ RESERVA_ESPACIO : "ocupado en (1:N)"
+    TARIFA ||--o{ RESERVA_ESPACIO : "aplica en (1:N)"
+    RESERVA ||--o| ENTRADA_SALIDA : "registra acceso (1:1)"
+
+    USUARIO {
+        int id PK
+        string nombre
+        string correo UK
+        string password
+        string rol
+        timestamp fecha_creacion
+    }
+
+    VEHICULO {
+        int id PK
+        int usuario_id FK
+        string placa UK
+        string marca
+        string modelo
+        string color
+        string tipo
+    }
+
+    ESPACIO {
+        int id PK
+        string numero UK
+        string tipo
+        string estado
+        string ubicacion
+    }
+
+    TARIFA {
+        int id PK
+        string tipo_vehiculo
+        decimal precio_hora
+        decimal precio_dia
+        timestamp fecha_inicio
+        timestamp fecha_fin
+        boolean activa
+    }
+
+    RESERVA {
+        int id PK
+        int usuario_id FK
+        int vehiculo_id FK
+        timestamp fecha_inicio
+        timestamp fecha_fin
+        string estado
+        timestamp fecha_creacion
+    }
+
+    RESERVA_ESPACIO {
+        int id PK
+        int reserva_id FK
+        int espacio_id FK
+        int tarifa_id FK
+        decimal precio_aplicado
+        timestamp fecha_reserva
+    }
+
+    ENTRADA_SALIDA {
+        int id PK
+        int reserva_id FK
+        timestamp fecha_entrada
+        timestamp fecha_salida
+        decimal costo_total
+    }
+```
+
 ### Diagrama BPMN
 
 ![Diagrama BPMN](docs/DiagramaBPMN.png)
